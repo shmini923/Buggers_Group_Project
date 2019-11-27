@@ -92,10 +92,7 @@ ui<-(fluidPage(
       tabPanel("Data Visualization", verbatimTextOutput('datavis')),
       tabPanel('Plot', plotOutput('plots')), # The name "Scatter Plot" is the name of the tab. 'scatter' is the part of the plot name to tell are to build the plot under Scatter Plot tab
       tabPanel('Linear Model', verbatimTextOutput('linear')),
-      tabPanel('ANOVA', selectInput('type', 'Please select Sums of Squares type', 
-                                    c(I = 'type1', II = 'type2', III = 'type3'), 'type1')
-               ,uiOutput('var'),
-               verbatimTextOutput('anova'))
+      tabPanel('ANOVA', tableOutput('aovSummary'))
     ),
     h3(textOutput("caption")),
     uiOutput("plot") # depends on input
@@ -227,35 +224,16 @@ server<-(function(input, output, session){
   })
   
   # ANOVA
-  
-  output$var <- renderUI({
-    av.obj <- get_data()
-    if(is.null(input$dataset)){
-      return()
-    }else{
-      list (radioButtons("dvar", "Please Pick The Dependent Variable", choices = names(av.obj)),
-            radioButtons("ivar", "Please Pick The Independent Variable", choices = names(av.obj)),
-            actionButton("submit", "Submit")
-      )
-    }
-  })
-  
+
   output$aovSummary = renderTable({
-    if(is.null(input$dataset)){return()}
-    if(input$submit > 0){
-      if(input$type == 'type1'){
-        return(isolate(anova(lm(av.obj[,input$dvar] ~ av.obj[,input$ivar], data = av.obj))))
-      }
-      if(input$type == 'type2'){
-        return(isolate(Anova(lm(av.obj[,input$dvar] ~ av.obj[,input$ivar], data = av.obj)), Type = "II", test.statistic = "F"))
-      }
-      if(input$type == 'type3'){
-        isolate(
-          fit <- aov(av.obj[,input$dvar] ~ av.obj[,input$ivar], data = av.obj)
-        )
-        return(drop1(fit, ~ . , test = 'F'))
-      }
-    }
+    
+  an.obj <- get_data()
+  Variable1 <- an.obj$data[,input$variable1]
+  Variable2 <- an.obj$data[,input$variable2]
+  Variable3 <- an.obj$data[,input$variable3]
+  rev.aov <- anova(lm(Variable1 ~ Variable2 + Variable3 + Variable2:Variable3))
+  rev.aov
+   }, rownames = TRUE, colnames = TRUE)
   })
  
   
